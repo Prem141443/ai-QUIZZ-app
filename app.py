@@ -3,9 +3,15 @@ import PyPDF2
 import docx
 import random
 import nltk
+import os
 
-# Download NLTK 'punkt' tokenizer automatically
-nltk.download('punkt', quiet=True)
+# ---------- NLTK Setup for Streamlit Cloud ----------
+nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
+if not os.path.exists(nltk_data_path):
+    os.makedirs(nltk_data_path)
+nltk.data.path.append(nltk_data_path)
+nltk.download('punkt', download_dir=nltk_data_path, quiet=True)
+
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 # ---------- Helper Functions ----------
@@ -34,7 +40,7 @@ def generate_quiz(text, num_questions=5, level="easy"):
     for i in range(min(num_questions, len(sentences))):
         sentence = sentences[i]
         words = word_tokenize(sentence)
-        keywords = [w for w in words if w.isalpha() and len(w) > 4]  # pick long words as answers
+        keywords = [w for w in words if w.isalpha() and len(w) > 4]  # pick long words
         if not keywords:
             continue
         answer = random.choice(keywords)
@@ -47,8 +53,8 @@ def generate_quiz(text, num_questions=5, level="easy"):
 
 # ---------- Streamlit App ----------
 
-st.set_page_config(page_title="NLTK Quiz Generator", page_icon="📝")
-st.title("📝 Quiz Generator using NLTK")
+st.set_page_config(page_title="Quiz Generator", page_icon="📝")
+st.title("📝 Quiz Generator (NLTK + Streamlit Cloud)")
 
 # Step 1: Upload file
 uploaded_file = st.file_uploader("Upload your document (PDF, DOCX, TXT)", type=["pdf","docx","txt"])
@@ -82,7 +88,7 @@ if 'questions' in st.session_state and st.session_state['questions']:
             if st.session_state['answers'][idx].lower() == q['answer'].lower():
                 score += 1
         total = len(st.session_state['questions'])
-        percentage = (score/total) * 100
+        percentage = (score / total) * 100
         st.success(f"Your Score: {score}/{total} ({percentage:.2f}%)")
         if percentage >= 80:
             st.balloons()
@@ -91,3 +97,4 @@ if 'questions' in st.session_state and st.session_state['questions']:
             st.info("Feedback: Good job! Keep improving. 👍")
         else:
             st.warning("Feedback: Try again! You can do better. 💪")
+
