@@ -55,31 +55,27 @@ if uploaded_file is not None:
     
     if st.button("Generate Quiz"):
         st.session_state['questions'] = generate_quiz(document_text, num_questions, level)
-        st.session_state['answers'] = []
+        st.session_state['answers'] = [""] * len(st.session_state['questions'])
 
-    # Display quiz if generated
-    if 'questions' in st.session_state:
-        st.subheader("Quiz")
+# Step 3: Display quiz if generated
+if 'questions' in st.session_state:
+    st.subheader("Quiz")
+    for idx, q in enumerate(st.session_state['questions']):
+        st.markdown(f"**Q{idx+1}: {q['question']}**")
+        st.session_state['answers'][idx] = st.radio(f"Select answer for Q{idx+1}", q['options'], key=f"q{idx}")
+
+    if st.button("Submit Quiz"):
+        score = 0
         for idx, q in enumerate(st.session_state['questions']):
-            st.markdown(f"**Q{idx+1}: {q['question']}**")
-            choice = st.radio(f"Select answer for Q{idx+1}", q['options'], key=f"q{idx}")
-            if len(st.session_state['answers']) < len(st.session_state['questions']):
-                st.session_state['answers'].append(choice)
-            else:
-                st.session_state['answers'][idx] = choice
-
-        if st.button("Submit Quiz"):
-            score = 0
-            for idx, q in enumerate(st.session_state['questions']):
-                if st.session_state['answers'][idx].lower() == q['answer'].lower():
-                    score += 1
-            total = len(st.session_state['questions'])
-            percentage = (score/total)*100
-            st.success(f"Your Score: {score}/{total} ({percentage:.2f}%)")
-            if percentage >= 80:
-                st.balloons()
-                st.success("Feedback: Excellent! 🎉")
-            elif percentage >= 50:
-                st.info("Feedback: Good job! Keep improving. 👍")
-            else:
-                st.warning("Feedback: Try again! You can do better. 💪")
+            if st.session_state['answers'][idx].lower() == q['answer'].lower():
+                score += 1
+        total = len(st.session_state['questions'])
+        percentage = (score/total)*100
+        st.success(f"Your Score: {score}/{total} ({percentage:.2f}%)")
+        if percentage >= 80:
+            st.balloons()
+            st.success("Feedback: Excellent! 🎉")
+        elif percentage >= 50:
+            st.info("Feedback: Good job! Keep improving. 👍")
+        else:
+            st.warning("Feedback: Try again! You can do better. 💪")
