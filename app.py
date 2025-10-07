@@ -2,7 +2,11 @@ import streamlit as st
 import PyPDF2
 import docx
 import random
-import re
+import nltk
+
+# Download NLTK 'punkt' tokenizer automatically
+nltk.download('punkt', quiet=True)
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 # ---------- Helper Functions ----------
 
@@ -23,37 +27,28 @@ def read_file(uploaded_file):
         st.warning("Unsupported file type")
     return text
 
-def split_sentences(text):
-    """Split text into sentences using regex (offline, no NLTK)"""
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    return [s.strip() for s in sentences if s.strip()]
-
-def split_words(sentence):
-    """Split sentence into words (only alphabets)"""
-    return [w for w in re.findall(r'\b\w+\b', sentence) if w.isalpha()]
-
 def generate_quiz(text, num_questions=5, level="easy"):
-    """Generate multiple choice questions from text"""
-    sentences = split_sentences(text)
+    """Generate multiple choice questions from text using NLTK"""
+    sentences = sent_tokenize(text)
     questions = []
     for i in range(min(num_questions, len(sentences))):
         sentence = sentences[i]
-        words = split_words(sentence)
-        keywords = [w for w in words if len(w) > 4]  # pick longer words as answers
+        words = word_tokenize(sentence)
+        keywords = [w for w in words if w.isalpha() and len(w) > 4]  # pick long words as answers
         if not keywords:
             continue
         answer = random.choice(keywords)
         question_text = sentence.replace(answer, "_____")
-        distractors = random.sample([w for w in keywords if w != answer] + ["OptionX","OptionY"],3)
-        options = [answer]+distractors
+        distractors = random.sample([w for w in keywords if w != answer] + ["OptionX","OptionY"], 3)
+        options = [answer] + distractors
         random.shuffle(options)
-        questions.append({'question':question_text,'options':options,'answer':answer})
+        questions.append({'question': question_text, 'options': options, 'answer': answer})
     return questions
 
 # ---------- Streamlit App ----------
 
-st.set_page_config(page_title="Offline Quiz Generator", page_icon="📝")
-st.title("📝 Offline Quiz Generator")
+st.set_page_config(page_title="NLTK Quiz Generator", page_icon="📝")
+st.title("📝 Quiz Generator using NLTK")
 
 # Step 1: Upload file
 uploaded_file = st.file_uploader("Upload your document (PDF, DOCX, TXT)", type=["pdf","docx","txt"])
@@ -61,7 +56,7 @@ uploaded_file = st.file_uploader("Upload your document (PDF, DOCX, TXT)", type=[
 if uploaded_file is not None:
     document_text = read_file(uploaded_file)
     
-    # Step 2: Select difficulty level
+    # Step 2: Select difficulty
     level = st.selectbox("Select difficulty level", ["easy", "medium", "hard"])
     
     # Step 3: Select number of questions
@@ -87,7 +82,7 @@ if 'questions' in st.session_state and st.session_state['questions']:
             if st.session_state['answers'][idx].lower() == q['answer'].lower():
                 score += 1
         total = len(st.session_state['questions'])
-        percentage = (score/total)*100
+        percentage = (score/total) * 100
         st.success(f"Your Score: {score}/{total} ({percentage:.2f}%)")
         if percentage >= 80:
             st.balloons()
@@ -96,4 +91,3 @@ if 'questions' in st.session_state and st.session_state['questions']:
             st.info("Feedback: Good job! Keep improving. 👍")
         else:
             st.warning("Feedback: Try again! You can do better. 💪")
-
